@@ -76,14 +76,14 @@ void loop()
       //delay(1000);
     }
     fht_window();  // fht_input.*_window_func / 2^15
-    //fht_reorder(); // reorder the data before doing the fht
-    //fht_run(); // process the data in the fht
+    fht_reorder(); // reorder the data before doing the fht
+    fht_run(); // process the data in the fht
     //fht_mag_log(); // take the output of the fht
     //sei();
 
     
     for (int i = 0; i < NFHT; i++) {Serial.println(fht_input[i], DEC);}
-    //for (int i = 0; i < 500-NFHT/2; i++) {Serial.println(0);} // zero pad plotter window
+    for (int i = 0; i < 500-NFHT; i++) {Serial.println(0);} // zero pad plotter window
     delay(5000);
   }
 }

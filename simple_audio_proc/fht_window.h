@@ -1,9 +1,7 @@
 #ifndef _FHT_WINDOW_H_
 #define _FHT_WINDOW_H_
 
-
 extern const int16_t __attribute__((used)) _window_func[] PROGMEM 	= { 
-  // w_hann = round(2^14 - 2^14*cos(2*pi*n/256))
 0,
 5,
 20,
@@ -132,7 +130,7 @@ extern const int16_t __attribute__((used)) _window_func[] PROGMEM 	= {
 32724,
 32748,
 32763,
-32768,
+32767, // to fit in 16-bit
 32763,
 32748,
 32724,
