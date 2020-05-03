@@ -36,35 +36,13 @@ void setup()
 
 void c_fht_window(void)
 {
-  uint8_t r28, r29, r30, r31;
-  uint16_t tmp;
+  uint8_t r20, r28, r29, r30, r31;
 
-  tmp = &fht_input;
-  r28 = (uint8_t)((uint16_t)(&fht_input) & 0x00FF);
-  r29 = (uint8_t)(((uint16_t)(&fht_input) >> 8) % 0x00FF);
-  Serial.println(tmp, HEX);
-  Serial.println(r28,HEX);
-  Serial.println(r29,HEX);
-/*
-  tmp = &_window_func;
-  r30 = (uint8_t)(&fht_input & 0x00FF);
-  r31 = (uint8_t)((&fht_input>>8) % 0x00FF);
-  Serial.println(tmp, HEX);
-  Serial.println(r30,HEX);
-  Serial.println(r31,HEX);
-*/
-  
-  //r28 = &tmp;
-  //r29 = (uint8_t)*(fht_input >> 8);
-  //r20 = (uint8_t)(NFHT & 0xFF);
-  //"ldi r28, lo8(fht_input) \n"    // R28 (YL) = fht_input & 0x00FF
-  //"ldi r29, hi8(fht_input) \n"    // R29 (YH) = fht_input & 0xFF00
-  //"ldi r30, lo8(_window_func) \n" // R30 (ZL) = _window_func & 0x00FF
-  //"ldi r31, hi8(_window_func) \n" // R31 (ZH) = _window_func & 0xFF00
-  //"ldi r20, " STRINGIFY(((NFHT)&(0xff))) " \n"               // R20 = 0xFF
-
-  //Serial.println(r29);
-  //Serial.println(r20);
+  r28 = (uint8_t)((uint16_t)(&fht_input) & 0x00ff);
+  r29 = (uint8_t)(((uint16_t)(&fht_input) >> 8) % 0x00ff);
+  r30 = (uint8_t)((uint16_t)(&_window_func) & 0x00ff);
+  r31 = (uint8_t)(((uint16_t)(&_window_func) >> 8) % 0x00ff);
+  r20 = 256 & 0xff;
   
 }
 
@@ -87,9 +65,8 @@ void loop()
       k <<= 6;                    // shift 10b int to form into a 16b signed int
       fht_input[i] = k;           // put real data into bins
     }
-    c_fht_window();
-    //fht_window();  // fht_input.*_window_func / 2^15
-    //fht_reorder(); // reorder the data before doing the fht
+    fht_window();  // fht_input.*_window_func / 2^15
+    fht_reorder(); // reorder the data before doing the fht
     //fht_run(); // process the data in the fht
     //fht_mag_log(); // take the output of the fht
     //sei();

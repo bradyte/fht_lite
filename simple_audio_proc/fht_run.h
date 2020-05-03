@@ -161,15 +161,15 @@ static inline void fht_run(void) {
   "ldd r7,y+1 \n"
   "ldd r4,y+2 \n" // fetch x1
   "ldd r5,y+3 \n"
-  "asr r7 \n" // divide by 2 to keep from overflowing
+  "asr r7 \n" // signed divide by r7:r6 by 2
   "ror r6 \n"
   "movw r8,r6 \n" // make backup
-  "asr r5 \n" // divide by 2 to keep from overflowing
+  "asr r5 \n" // signed divide by r5:r4 by 2
   "ror r4 \n"
   "add r6,r4 \n" // x0 + x1
-  "adc r7,r5 \n"
+  "adc r7,r5 \n" // add low byte then add high byte with carry
   "sub r8,r4 \n" // x0 - x1
-  "sbc r9,r5 \n"
+  "sbc r9,r5 \n" // sub low byte then sub low byte with carry
 
   // first set: x2 and x3
   "ldd r10,y+4 \n" // fetch x2
