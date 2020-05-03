@@ -1,3 +1,13 @@
+///////////////////////////////////////////////////////////////////////////////
+/* References
+ * http://www.elektronika.kvalitne.cz/ATMEL/necoteorie/transformation/AVRFHT/AVRFHT.html
+ * http://www.fourwalledcubicle.com/AVRArticles.php 
+ *  
+ *  
+ *  
+ *  
+ */
+
 #ifndef _fht_lite_h // include guard
 #define _fht_lite_h
 
