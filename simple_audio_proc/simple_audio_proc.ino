@@ -3,6 +3,7 @@
 #include "fht_lite.h"
 #include "fht_run.h"
 #include "fht_mag_log.h"
+#include "rgb_lite.h"
 
 // Which pin on the Arduino is connected to the NeoPixels?
 #define PIN       7
@@ -142,6 +143,22 @@ static inline void _fht_reorder(void) {
   );
 }
 
+void rgb_demo(void) {
+  uint8_t rr, gg, bb;
+  for(int idx = 0; idx < 128; idx++) {
+    for(int i=0; i<NUMPIXELS; i++) {
+      rr = pgm_read_byte_near(&_R[idx]);
+      gg = pgm_read_byte_near(&_G[idx]);
+      bb = pgm_read_byte_near(&_B[idx]);
+      
+      pixels.setPixelColor(i, pixels.Color(rr, gg, bb));
+      pixels.show();
+    }
+    //Serial.println(rr, DEC);
+    delay(10);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   //TIMSK0  = 0; // turn off timer0 for lower jitter, will not be able to use delay()
@@ -153,10 +170,14 @@ void setup() {
 }
 
 void loop() {
+  uint8_t rr, gg, bb;
+  uint8_t f_max = 0;
+  uint8_t idx = 0;
+  //while(1) { rgb_demo();}
   while(1) {
-    pixels.clear(); // Set all pixel colors to 'off'
-    cli();
     //unsigned long tmr = micros();
+    
+    cli();
     for (int i = 0 ; i < NFHT ; i++) {// Capture 256 samples of the signal
       while(!(ADCSRA & (1<<ADIF)));   // wait for ADC complete flag ADIF
       ADCSRA    = ADCSRA_CONFIG_F;            // restart adc
@@ -173,24 +194,29 @@ void loop() {
     _fht_run(); // process the data in the fht
     _fht_mag_log(); // take the output of the fht
     sei();
-    //Serial.write(255); // send a start byte
-    //Serial.write(fht_log_out, NFHT/2); // send out the data
-    int f_max = 0;
-    int idx = 0;
-    for(int i = 0; i < NFHT/2; i++) {
+    Serial.write(255); // send a start byte
+    Serial.write(fht_log_out, NFHT/2); // send out the data
+
+   /* for(int i = 0; i < NFHT/2; i++) {
       if(fht_log_out[i] >= f_max) {
          idx = i;
          f_max = fht_log_out[i];
       }
     }
-    //Serial.println(idx, DEC);
+    pixels.clear(); // Set all pixel colors to 'off'
+    rr = pgm_read_byte_near(&_R[idx]);
+    gg = pgm_read_byte_near(&_G[idx]);
+    bb = pgm_read_byte_near(&_B[idx]);
     for(int i=0; i<NUMPIXELS; i++) {
-      pixels.setPixelColor(i, pixels.Color(0, idx*2, 0));
+      pixels.setPixelColor(i, pixels.Color(rr, gg, bb));
       pixels.show();
-    }
-    /*tmr = micros() - tmr;
+    }*/
+    /*
+    tmr = micros() - tmr;
     Serial.println(tmr);
     delay(1000);
-    tmr = 0;*/
+    tmr = 0;
+    */
+
   }
 }
