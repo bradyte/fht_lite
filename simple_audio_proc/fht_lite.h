@@ -10,15 +10,10 @@
 
 #ifndef _FHT_LITE_H_ // include guard
 #define _FHT_LITE_H_
-/*
-#define NFHT 256
-#define LOG_N 8
-#define _R_V 8
-*/
 
-#define NFHT 16
-#define LOG_N 4
-#define _R_V 2
+#define NFHT 32
+#define LOG_N 5
+#define _R_V 4
 
 #define ADC_BIT_RES 10
 #define ADCSRA_CONFIG (1<<ADEN) | (1<<ADSC) | (1<<ADATE) | (1<<ADPS2) | (1<<ADPS0)
@@ -29,11 +24,29 @@
 #define STRINGIFY_(a) #a
 #define STRINGIFY(a) STRINGIFY_(a)
 
-
-
 int16_t __attribute__((used)) fht_input[(NFHT)]; // FHT input data buffer
 uint8_t __attribute__((used)) fht_log_out[(NFHT/2)];
-//int16_t sinetable[NFHT] ={0};
+
+
+extern const int16_t __attribute__((used)) _window_func[] PROGMEM   = { 
+    0,  335, 1328, 2937, 5096, 7717,10694,13903,17214,20491,23599,26413,28815,30709,32017,32684,
+32684,32017,30709,28815,26413,23599,20491,17214,13903,10694, 7717, 5096, 2937, 1328,  335,    0,
+};
+
+extern const uint8_t __attribute__((used)) _reorder_table[] PROGMEM = { 
+   24,    3,   28,    7,   26,   11,   30,   15,   25,   19,   29,   23,   16,    1,   20,    5,
+   18,    9,   22,   13,    8,    2,   12,    6,
+};
+
+extern const int16_t __attribute__((used)) _cas_constants[] PROGMEM  = {
+30274,12540,23170,23170,12540,30274,32138, 6393,30274,12540,27246,18205,23170,23170,18205,27246,
+12540,30274, 6393,32138,
+};
+
+/*
+#define NFHT 16
+#define LOG_N 4
+#define _R_V 2
 
 extern const int16_t __attribute__((used)) _window_func[] PROGMEM   = { 
     0, 1416, 5421,11321,18097,24576,29639,32410,32410,29639,24576,18097,11321, 5421, 1416,   0,
@@ -46,8 +59,12 @@ extern const uint8_t __attribute__((used)) _reorder_table[] PROGMEM = {
 extern const int16_t __attribute__((used)) _cas_constants[] PROGMEM  = {
 30274,12540,23170,23170,12540,30274,
 };
+*/
 
 /*
+#define NFHT 256
+#define LOG_N 8
+#define _R_V 8
 extern const int16_t __attribute__((used)) _window_func[] PROGMEM   = { 
     0,    5,   20,   44,   79,  123,  177,  241,  315,  398,  491,  593,  705,  827,  958, 1098,
  1247, 1406, 1573, 1749, 1935, 2128, 2331, 2542, 2761, 2989, 3224, 3468, 3719, 3978, 4244, 4518,

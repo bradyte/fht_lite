@@ -8,8 +8,13 @@
 // Which pin on the Arduino is connected to the NeoPixels?
 //#define TIMEIT
 #define PIN       7
-#define NUMPIXELS 8 // Popular NeoPixel ring size
+#define NUMPIXELS 16 // Popular NeoPixel ring size
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+
+const int n_samples = 8;
+uint8_t mov_avg[n_samples][NFHT/2] = {0};
+uint8_t eq_avg[NFHT/2] = {0};
+
 ///////////////////////////////////////////////////////////////////////////////
 static inline void _fht_window(void) {
   // this applies a window to the data for better frequency resolution
@@ -144,19 +149,17 @@ static inline void _fht_reorder(void) {
   );
 }
 
-void rgb_demo(void) {
+void update_pixels(void) {
   uint8_t rr, gg, bb;
-  for(int idx = 0; idx < 256; idx++) {
-    for(int i=0; i<NUMPIXELS; i++) {
-      rr = pgm_read_byte(&_R[idx]);
-      gg = pgm_read_byte(&_G[idx]);
-      bb = pgm_read_byte(&_B[idx]);
-      
-      pixels.setPixelColor(i, pixels.Color(rr, gg, bb));
-      pixels.show();
-    }
-    //Serial.println(rr, DEC);
-    delay(10);
+  for(int i=0; i < NUMPIXELS; i++) {
+    //rr = pgm_read_byte(&_R[fht_log_out[i]]);
+    //gg = pgm_read_byte(&_G[fht_log_out[i]]);
+    //bb = pgm_read_byte(&_B[fht_log_out[i]]);
+    rr = pgm_read_byte(&_R[eq_avg[i]]);
+    gg = pgm_read_byte(&_G[eq_avg[i]]);
+    bb = pgm_read_byte(&_B[eq_avg[i]]);
+    pixels.setPixelColor(i, pixels.gamma32((pixels.Color(rr, gg, bb))));
+    pixels.show();
   }
 }
 
@@ -172,16 +175,15 @@ void setup() {
 }
 
 void loop() {
-  uint8_t rr, gg, bb;
-  uint8_t f_max = 0;
+  uint16_t filt = 0;
   uint8_t idx = 0;
-  //while(1) { rgb_demo();}
+  float a = 0.1;
+
   while(1) {
     #ifdef TIMEIT
       unsigned long tmr = micros();
     #endif
-    
-    //cli();
+
     for (int i = 0 ; i < NFHT ; i++) {// Capture 256 samples of the signal
       while(!(ADCSRA & (1<<ADIF)));   // wait for ADC complete flag ADIF
       ADCSRA    = ADCSRA_CONFIG_F;            // restart adc
@@ -189,6 +191,7 @@ void loop() {
       uint8_t j = ADCH;         // fetch high ADC byte
       int16_t k = (j << 8) | m; // combine ADCH with ADCL to form int
       //int16_t k = sinetable[i];   // inject artifical sine wave
+      filt = filt * a + k * (1-a); // apply LPF
       k = (k - 0x0200) << 6;      // shift 10b int to form into a 16b signed int
       fht_input[i] = k;           // put real data into bins
     }
@@ -196,34 +199,38 @@ void loop() {
     _fht_reorder(); // reorder the data before doing the fht
     _fht_run(); // process the data in the fht
     _fht_mag_log(); // take the output of the fht
-    
-    #ifndef TIMEIT
-      //Serial.write(255); // send a start byte
-      //Serial.write(fht_log_out, NFHT/2); // send out the data
-    #endif
-    /*for(int i=0; i < NFHT; i++)
-    {
-      Serial.print(fht_log_out[i],DEC);
-      Serial.print(" ");
-    }
-    Serial.println();
-    delay(500);*/
+    //Serial.write(255); // send a start byte
+    //Serial.write(fht_log_out, NFHT/2); // send out the data
 
-    for(int i=0; i < NUMPIXELS; i++) {
-      rr = pgm_read_byte(&_R[fht_log_out[i]]);
-      gg = pgm_read_byte(&_G[fht_log_out[i]]);
-      bb = pgm_read_byte(&_B[fht_log_out[i]]);
-      pixels.setPixelColor(i, pixels.gamma32((pixels.Color(rr, gg, bb))));
-      pixels.show();
+    // rotate 
+    for(int i = 0; i < n_samples-1; i++) {
+      for(int j = 0; j < NFHT/2; j++) {
+        mov_avg[i][j] = mov_avg[i+1][j];
+      }
     }
-    delay(10);
-    //sei();
+     
+    // add new
+    for(int j = 0; j < NFHT/2; j++) {
+      mov_avg[n_samples-1][j] = fht_log_out[j];
+      //mov_avg[n_samples-1][j] = dummy[j];
+    }
+
+    //average
+    for(int j = 0; j < NFHT/2; j++) {
+      int16_t tmp = 0;
+      for(int i = 0; i < n_samples; i++) {
+        tmp += mov_avg[i][j];
+      }
+      eq_avg[j] = int(tmp/n_samples);
+    }
+
+    update_pixels();
+
     #ifdef TIMEIT
       tmr = micros() - tmr;
       Serial.println(tmr);
       delay(1000);
       tmr = 0;
     #endif
-
   }
 }
