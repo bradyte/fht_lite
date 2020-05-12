@@ -6,6 +6,7 @@
 #include "rgb_lite.h"
 
 // Which pin on the Arduino is connected to the NeoPixels?
+//#define TIMEIT
 #define PIN       7
 #define NUMPIXELS 8 // Popular NeoPixel ring size
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
@@ -42,17 +43,17 @@ static inline void _fht_window(void) {
   // Signed fractional multiply of two 16-bit numbers with 32-bit result.
   // r5:r4:r3:r2 = ( r23:r22 * r21:r20 ) << 1
   "clr r15 \n"        // R15    = 0
-  "fmuls r17,r23 \n"  // R1:R0  = ((signed)R17 * (signed)R23) << 1, C is set if bit 15 is set before shift
+  "muls r17,r23 \n"  // R1:R0  = ((signed)R17 * (signed)R23) << 1, C is set if bit 15 is set before shift
   "movw r4,r0 \n"     // R5:R4  = R1:R0
-  "fmul r16,r22 \n"   // R1:R0  = ((unsigned)R16 * (unsigned)R22) << 1
+  "mul r16,r22 \n"   // R1:R0  = ((unsigned)R16 * (unsigned)R22) << 1
   "adc r4,r15 \n"     // R4     = R4 + R15 + C
   "movw r2,r0 \n"     // R3:R2  = R1:R0 
-  "fmulsu r17,r22 \n" // R1:R0  = ((signed)R17 * (unsigned)R22) << 1
+  "mulsu r17,r22 \n" // R1:R0  = ((signed)R17 * (unsigned)R22) << 1
   "sbc r5,r15 \n"     // R5     = R5 - R15 - C
   "add r3,r0 \n"      // R3     = R3 + R0
   "adc r4,r1 \n"      // R4     = R4 + R1
   "adc r5,r15 \n"     // R5     = R5 + R15 + C
-  "fmulsu r23,r16 \n" // R1:R0  = ((signed)R23 * (unsigned)R16) << 1
+  "mulsu r23,r16 \n" // R1:R0  = ((signed)R23 * (unsigned)R16) << 1
   "sbc r5,r15 \n"     // R5     = R5 - R15 - C
   "add r3,r0 \n"      // R3     = R3 + R0
   "adc r4,r1 \n"      // R4     = R4 + R1
@@ -145,11 +146,11 @@ static inline void _fht_reorder(void) {
 
 void rgb_demo(void) {
   uint8_t rr, gg, bb;
-  for(int idx = 0; idx < 128; idx++) {
+  for(int idx = 0; idx < 256; idx++) {
     for(int i=0; i<NUMPIXELS; i++) {
-      rr = pgm_read_byte_near(&_R[idx]);
-      gg = pgm_read_byte_near(&_G[idx]);
-      bb = pgm_read_byte_near(&_B[idx]);
+      rr = pgm_read_byte(&_R[idx]);
+      gg = pgm_read_byte(&_G[idx]);
+      bb = pgm_read_byte(&_B[idx]);
       
       pixels.setPixelColor(i, pixels.Color(rr, gg, bb));
       pixels.show();
@@ -167,6 +168,7 @@ void setup() {
   DIDR0   = DIDR0_CONFIG;   // disable digital input of ADC0
 
   pixels.begin();
+  pixels.setBrightness(50);
 }
 
 void loop() {
@@ -175,9 +177,11 @@ void loop() {
   uint8_t idx = 0;
   //while(1) { rgb_demo();}
   while(1) {
-    //unsigned long tmr = micros();
+    #ifdef TIMEIT
+      unsigned long tmr = micros();
+    #endif
     
-    cli();
+    //cli();
     for (int i = 0 ; i < NFHT ; i++) {// Capture 256 samples of the signal
       while(!(ADCSRA & (1<<ADIF)));   // wait for ADC complete flag ADIF
       ADCSRA    = ADCSRA_CONFIG_F;            // restart adc
@@ -185,38 +189,41 @@ void loop() {
       uint8_t j = ADCH;         // fetch high ADC byte
       int16_t k = (j << 8) | m; // combine ADCH with ADCL to form int
       //int16_t k = sinetable[i];   // inject artifical sine wave
-      k -= 0x0200;                // k = k - 512 to form signed int
-      k <<= 6;                    // shift 10b int to form into a 16b signed int
+      k = (k - 0x0200) << 6;      // shift 10b int to form into a 16b signed int
       fht_input[i] = k;           // put real data into bins
     }
     _fht_window();  // fht_input.*_window_func / 2^15
     _fht_reorder(); // reorder the data before doing the fht
     _fht_run(); // process the data in the fht
     _fht_mag_log(); // take the output of the fht
-    sei();
-    Serial.write(255); // send a start byte
-    Serial.write(fht_log_out, NFHT/2); // send out the data
-
-   /* for(int i = 0; i < NFHT/2; i++) {
-      if(fht_log_out[i] >= f_max) {
-         idx = i;
-         f_max = fht_log_out[i];
-      }
+    
+    #ifndef TIMEIT
+      //Serial.write(255); // send a start byte
+      //Serial.write(fht_log_out, NFHT/2); // send out the data
+    #endif
+    /*for(int i=0; i < NFHT; i++)
+    {
+      Serial.print(fht_log_out[i],DEC);
+      Serial.print(" ");
     }
-    pixels.clear(); // Set all pixel colors to 'off'
-    rr = pgm_read_byte_near(&_R[idx]);
-    gg = pgm_read_byte_near(&_G[idx]);
-    bb = pgm_read_byte_near(&_B[idx]);
-    for(int i=0; i<NUMPIXELS; i++) {
-      pixels.setPixelColor(i, pixels.Color(rr, gg, bb));
+    Serial.println();
+    delay(500);*/
+
+    for(int i=0; i < NUMPIXELS; i++) {
+      rr = pgm_read_byte(&_R[fht_log_out[i]]);
+      gg = pgm_read_byte(&_G[fht_log_out[i]]);
+      bb = pgm_read_byte(&_B[fht_log_out[i]]);
+      pixels.setPixelColor(i, pixels.gamma32((pixels.Color(rr, gg, bb))));
       pixels.show();
-    }*/
-    /*
-    tmr = micros() - tmr;
-    Serial.println(tmr);
-    delay(1000);
-    tmr = 0;
-    */
+    }
+    delay(10);
+    //sei();
+    #ifdef TIMEIT
+      tmr = micros() - tmr;
+      Serial.println(tmr);
+      delay(1000);
+      tmr = 0;
+    #endif
 
   }
 }

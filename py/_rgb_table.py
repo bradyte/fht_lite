@@ -2,17 +2,14 @@ import numpy as np
 
 MAX_WL = 780
 MIN_WL = 380
-stp = int((MAX_WL-MIN_WL)/128)
-
-wl = np.arange(start = MIN_WL, stop = MAX_WL, step = stp)
-
+stp = (MAX_WL-MIN_WL)/256
 
 
 R = []
 G = []
 B = []
 
-for j in range(0,128):
+for j in range(0,256):
     i = MIN_WL + j*stp
     if ((i >= 380) and (i <= 410)):
         R.append(int(102 -  51 * (i - 380) / 30))
@@ -43,9 +40,11 @@ for j in range(0,128):
         G.append(0)
         B.append(0)
     elif ((i >= 700) and (i <= 780)): 
-        R.append(int(87 - 168 * (i - 780) / 80))
+        R.append(int(102 - 153 * (i - 780) / 80))
         G.append(0)
-        B.append(0)
+        #B.append(0)
+        B.append(int(103 + 103 * (i - 780) / 80))
+        
 
     print("{:5d},".format(B[j]),end = '')
     if (j+1) % 16 == 0:

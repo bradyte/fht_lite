@@ -44,9 +44,10 @@ for i in wl:
         G.append(0)
         B.append(0)
     elif ((i >= 700) and (i <= 780)): 
-        R.append(int(87 - 168 * (i - 780) / 80))
+        R.append(int(102 - 153 * (i - 780) / 80))
         G.append(0)
-        B.append(0)
+        #B.append(0)
+        B.append(int(103 + 103 * (i - 780) / 80))
     ax.plot([i, i], [255+8, 320], color=
         [R[i - MIN_WL] / 255, G[i - MIN_WL] / 255, B[i - MIN_WL] / 255])
 
